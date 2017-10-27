@@ -1,0 +1,153 @@
+# Import packages, navigate to directory:
+
+import numpy
+import pandas
+from scipy.optimize import minimize
+from scipy.stats import norm
+from scipy.stats import chi2
+from plotnine import *
+os.listdir('.')
+os.chdir('/Users/winghomitchell/Intro_Biocom_ND_319_Tutorial9')
+
+# Load data file:
+
+file=pandas.read_csv("ponzr1.csv")
+file['mutation'] = file['mutation'].map({'WT':0, 'M124K':1, 'V456D':2, 'I213N':3})
+
+# Create custom likelihood function:
+
+def nllike(p,obs):
+    B0=p[0]
+    B1=p[1]
+    sigma=p[2]
+    
+    expected=B0+B1*obs.mutation
+    nll=-1*norm(expected,sigma).logpdf(obs.ponzr1Counts).sum()
+    return nll
+
+initialGuess=numpy.array([1,1,1])
+fit=minimize(nllike,initialGuess,method="Nelder-Mead",options={'disp': True},args=file)
+
+print(fit.fun)
+
+# Subset 1: WT & M124K
+
+subset1=file.loc[file.mutation.isin(['0','1']),:]
+
+def nllike(p,obs):
+    B0=p[0]
+    sigma=p[1]
+    
+    expected=B0
+    nll=-1*norm(expected,sigma).logpdf(obs.ponzr1Counts).sum()
+    return nll
+    
+initialGuess=numpy.array([1,1])
+fit1=minimize(nllike,initialGuess,method="Nelder-Mead",options={'disp': True},args=subset1)
+
+def alt(p,obs):
+    B0=p[0]
+    B1=p[1]
+    sigma=p[2]
+    
+    expected=B0+B1*obs.mutation
+    nll=-1*norm(expected,sigma).logpdf(obs.ponzr1Counts).sum()
+    return nll
+
+initialGuess=numpy.array([1,1,1])
+fit2=minimize(alt,initialGuess,method="Nelder-Mead",options={'disp': True},args=subset1)
+
+D=2*(fit1.fun-fit2.fun)
+1-chi2.cdf(x=D,df=1)
+sub1ans=1-chi2.cdf(x=D,df=1)
+
+#Subset 2: WT & V456D
+
+subset2=file.loc[file.mutation.isin(['0','2']),:]
+
+def nllike(p,obs):
+    B0=p[0]
+    sigma=p[1]
+    
+    expected=B0
+    nll=-1*norm(expected,sigma).logpdf(obs.ponzr1Counts).sum()
+    return nll
+    
+initialGuess=numpy.array([1,1])
+fit3=minimize(nllike,initialGuess,method="Nelder-Mead",options={'disp': True},args=subset2)
+
+def alt(p,obs):
+    B0=p[0]
+    B1=p[1]
+    sigma=p[2]
+    
+    expected=B0+B1*obs.mutation
+    nll=-1*norm(expected,sigma).logpdf(obs.ponzr1Counts).sum()
+    return nll
+
+initialGuess=numpy.array([1,1,1])
+fit4=minimize(alt,initialGuess,method="Nelder-Mead",options={'disp': True},args=subset2)
+
+D=2*(fit3.fun-fit4.fun)
+1-chi2.cdf(x=D,df=1)
+sub2ans=1-chi2.cdf(x=D,df=1)
+
+# Subset 3: WT & I213N
+
+subset3=file.loc[file.mutation.isin(['0','3']),:]
+
+def nllike(p,obs):
+    B0=p[0]
+    sigma=p[1]
+    
+    expected=B0
+    nll=-1*norm(expected,sigma).logpdf(obs.ponzr1Counts).sum()
+    return nll
+    
+initialGuess=numpy.array([1,1])
+fit5=minimize(nllike,initialGuess,method="Nelder-Mead",options={'disp': True},args=subset3)
+
+def alt(p,obs):
+    B0=p[0]
+    B1=p[1]
+    sigma=p[2]
+    
+    expected=B0+B1*obs.mutation
+    nll=-1*norm(expected,sigma).logpdf(obs.ponzr1Counts).sum()
+    return nll
+
+initialGuess=numpy.array([1,1,1])
+fit6=minimize(alt,initialGuess,method="Nelder-Mead",options={'disp': True},args=subset3)
+
+D=2*(fit5.fun-fit6.fun)
+1-chi2.cdf(x=D,df=1)
+sub3ans=1-chi2.cdf(x=D,df=1)
+
+# Print out p-values and interpretation of results for Exercise 9, Question 1. 
+
+print("p = {}" .format(sub1ans))
+
+if sub1ans < 0.05:
+    print ("Reject the null hypothesis. Treatment has an effect.")
+    
+else:
+    print ("Fail to reject the null hypothesis. No effect of treatment.")
+    
+print("p = {}" .format(sub2ans))
+
+if sub2ans < 0.05:
+    print ("Reject the null hypothesis. Treatment has an effect.")
+    
+else:
+    print ("Fail to reject the null hypothesis.")
+    
+print("p = {}" .format(sub3ans))
+
+if sub3ans < 0.05:
+    print ("Reject the null hypothesis. Treatment has an effect.")
+    
+else:
+    print ("Fail to reject the null hypothesis. No effect of treatment.")
+    
+
+
