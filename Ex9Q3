@@ -1,0 +1,80 @@
+# Import packages: 
+
+import numpy
+import pandas
+from scipy.optimize import minimize
+from scipy.stats import norm
+from scipy.stats import chi2
+from plotnine import *
+os.listdir('.')
+os.chdir('/Users/winghomitchell/Intro_Biocom_ND_319_Tutorial9')
+ 
+# Read in data: 
+ 
+file3=pandas.read_csv("leafDecomp.csv")
+
+# Define custom quadratic function:
+
+def nllike_quadratic(p,obs):
+    
+    B0=p[0]
+    B1=p[1]
+    B2=p[2]
+    sigma=p[3]
+   
+    expected=B0+B1*obs.Ms+B2*obs.Ms*obs.Ms
+    nll=-1*norm(expected,sigma).logpdf(obs.decomp).sum()
+
+    return nll
+    
+# Define custom linear function:
+ 
+def nllike_linear(p,obs):
+    
+    B0=p[0]
+    B1=p[1]
+    sigma=p[2]
+    
+    expected=B0+B1*obs.Ms
+    nll=-1*norm(expected,sigma).logpdf(obs.decomp).sum()
+    
+    return nll
+
+# Define custom constant function: 
+
+def nllike_constant(p,obs):
+    
+    B0=p[0]
+    sigma=p[1]
+    
+    expected=B0
+    nll=-1*norm(expected,sigma).logpdf(obs.decomp).sum()
+   
+    return nll
+    
+# Set initial guesses for the models:
+
+initialGuess_quadratic=numpy.array([1,1,1,1])
+initialGuess_linear=numpy.array([1,1,1])
+initialGuess_constant=numpy.array([1,1])
+
+# Solve each of the three models:
+
+fitQuad=minimize(nllike_quadratic,initialGuess_quadratic,method="Nelder-Mead",options={'disp': True},args=file3)
+fitLinear=minimize(nllike_linear,initialGuess_linear,method="Nelder-Mead",options={'disp': True},args=file3)
+fitConstant=minimize(nllike_constant,initialGuess_constant,method="Nelder-Mead",options={'disp': True},args=file3)
+
+# Chi squared calculations for the three models:
+
+1-scipy.stats.chi2.cdf(x=-2*(fitQuad.fun-fitConstant.fun),df=2)
+1-scipy.stats.chi2.cdf(x=-2*(fitLinear.fun-fitConstant.fun),df=1)
+1-scipy.stats.chi2.cdf(x=-2*(fitConstant.fun-fitLinear.fun),df=1)
+
+# Print results and interpretation of results:
+
+print("Quadratic Growth Model: " "B0 =",fitQuad.x[0],"B1 =",fitQuad.x[1], "B2 =", fitQuad.x[2], "sigma =", fitQuad.x[3])
+print("Linear Growth Model: " "B0 =",fitLinear.x[0],"B1 =",fitLinear.x[1],"sigma =", fitLinear.x[2])
+print("Constant Growth Model: " "B0 =",fitConstant.x[0],"sigma =",fitConstant.x[1])
+print("\n")
+print("These results suggest...")
+ 
